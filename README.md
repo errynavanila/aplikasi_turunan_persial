@@ -1,0 +1,1 @@
+# aplikasi_turunan_persial
