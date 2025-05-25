@@ -1,32 +1,61 @@
 import streamlit as st
-import pandas as pd
+import sympy as sp
+import numpy as np
 import matplotlib.pyplot as plt
 
-st.title("Aplikasi Produksi Harian dengan Grafik")
+# Judul Aplikasi
+st.title("🧮 Aplikasi Turunan Parsial dan Bidang Singgung")
 
-# Input
-jam_kerja = st.number_input("Jam Kerja per Hari", min_value=1, max_value=24, value=8)
-produksi_per_jam = st.number_input("Jumlah Unit per Jam", min_value=1, value=10)
+# Input fungsi dari pengguna
+x, y = sp.symbols('x y')
+fungsi_str = st.text_input("Masukkan fungsi f(x, y):", "x**2 + y**2")
 
-# Hitung total produksi per hari
-total_unit_per_hari = jam_kerja * produksi_per_jam
+try:
+    # Menghitung turunan parsial
+    f = sp.sympify(fungsi_str)
+    fx = sp.diff(f, x)
+    fy = sp.diff(f, y)
 
-# Buat data produksi untuk 7 hari (misalnya 7 hari berturut-turut)
-hari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu']
-produksi = [total_unit_per_hari for _ in range(7)]
+    # Tampilkan turunan
+    st.latex(f"f(x, y) = {sp.latex(f)}")
+    st.latex(r"\frac{\partial f}{\partial x} = " + sp.latex(fx))
+    st.latex(r"\frac{\partial f}{\partial y} = " + sp.latex(fy))
 
-# Buat DataFrame
-df = pd.DataFrame({'Hari': hari, 'Produksi': produksi})
+    # Input titik evaluasi
+    x0 = st.number_input("Nilai x₀:", value=1.0)
+    y0 = st.number_input("Nilai y₀:", value=2.0)
 
-# Tampilkan tabel
-st.subheader("Data Produksi Mingguan")
-st.dataframe(df)
+    # Hitung nilai fungsi dan gradien di titik (x0, y0)
+    f_val = float(f.subs({x: x0, y: y0}))
+    fx_val = float(fx.subs({x: x0, y: y0}))
+    fy_val = float(fy.subs({x: x0, y: y0}))
 
-# Tampilkan grafik
-st.subheader("Grafik Produksi per Hari")
-fig, ax = plt.subplots()
-ax.bar(df['Hari'], df['Produksi'], color='skyblue')
-ax.set_ylabel('Jumlah Produksi (unit)')
-ax.set_title('Produksi Harian Selama Seminggu')
-st.pyplot(fig)
+    st.write(f"Nilai fungsi di titik ({x0}, {y0}) = ", f_val)
+    st.write(f"Gradien di titik ({x0}, {y0}) = ({fx_val}, {fy_val})")
 
+    st.subheader("📈 Grafik Permukaan dan Bidang Singgung")
+
+    # Persiapan data untuk plot
+    x_vals = np.linspace(x0 - 2, x0 + 2, 50)
+    y_vals = np.linspace(y0 - 2, y0 + 2, 50)
+    X, Y = np.meshgrid(x_vals, y_vals)
+
+    # Evaluasi permukaan fungsi
+    Z = sp.lambdify((x, y), f, 'numpy')(X, Y)
+
+    # Persamaan bidang singgung
+    Z_tangent = f_val + fx_val * (X - x0) + fy_val * (Y - y0)
+
+    # Plotting
+    fig = plt.figure(figsize=(10, 6))
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot_surface(X, Y, Z, alpha=0.7, cmap='viridis', label='Permukaan f(x, y)')
+    ax.plot_surface(X, Y, Z_tangent, alpha=0.5, color='red', label='Bidang Singgung')
+    ax.set_title("Permukaan f(x, y) dan Bidang Singgungnya")
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.set_zlabel("z")
+    st.pyplot(fig)
+
+except Exception as e:
+    st.error(f"Terjadi kesalahan: {e}")
